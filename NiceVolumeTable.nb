@@ -1,0 +1,45 @@
+percentDataRaw = "
+  100.0 95.5 92.2 89.2 86.3
+  97.8 93.9 90.7 87.8 85.0
+  95.5 92.2 89.2 86.3 83.7
+  93.9 90.7 87.8 85.0 82.4
+  92.2 89.2 86.3 83.7 81.1
+  90.7 87.8 85.0 82.4 79.9
+  89.2 86.3 83.7 81.1 78.6";
+
+volumeDataRaw = "
+  1x1 1x2 1x3 1x4 1x5
+  1x1 1x2 1x3 1x4 2x5
+  1x1 1x2 1x3 2x4 3x5
+  1x1 1x2 2x3 3x4 4x5
+  1x1 2x2 3x3 4x4 5x5
+  2x1 3x2 4x3 5x4 6x5
+  3x1 4x2 5x3 6x4 7x5";
+percentData = 
+  Map[(# <> "%") &, 
+   Fold[StringSplit, percentDataRaw, {"\n", " "}], {2}];
+volumeData = Fold[StringSplit, volumeDataRaw, {"\n", " "}];
+rawData = 
+  Table[volumeData[[i]][[j]] <> " @ " <> percentData[[i]][[j]], {i, 1,
+     7}, {j, 1, 5}];
+rpeText = StringSplit@"10 9.5 9 8.5 8 7.5 7";
+repText = StringSplit@"1 2 3 4 5";
+toGrid = Prepend[Transpose[rawData], rpeText] // Transpose;
+toGrid = Prepend[toGrid, Flatten[{"RPE / REPS", repText}]];
+
+intensity[str_] :=
+ With[{ss = ToExpression /@ StringCases[str, DigitCharacter ..]},
+  ss[[1]] ss[[2]] (ss[[3]] + ss[[4]]/10)/100.]
+intensitytoHue[val_] :=
+ With[{hueFactor = 2/3},
+  If[val >= 1,
+   Lighter[#, .2] &@Hue[hueFactor/26.51 (val - 1)],
+   Lighter[#, .2] &@Hue[-(hueFactor/(3*26.51)) val]]]
+  
+Grid[toGrid, Frame -> All, Background ->
+   {1 -> RGBColor[255/255, 250/255, 240/255],
+    1 -> RGBColor[255/255, 250/255, 240/255],
+    Flatten@
+     Table[{i, j} -> 
+       intensitytoHue[intensity[rawData[[i - 1]][[j - 1]]]], {i, 2, 
+       8}, {j, 2, 6}]}] // Text
